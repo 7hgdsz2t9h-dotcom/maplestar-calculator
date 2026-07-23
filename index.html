@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>楓星｜換裝表功比較器</title>
+<style>
+:root{--bg:#0d1117;--card:#161b22;--line:#30363d;--text:#f0f6fc;--muted:#8b949e;--accent:#2f81f7;--good:#3fb950;--bad:#f85149}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+main{max-width:760px;margin:auto;padding:20px 16px 60px}h1{font-size:26px;margin:8px 0}p{color:var(--muted);line-height:1.55}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}
+h2{font-size:18px;margin:0 0 12px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0d1117;color:var(--text);font-size:16px}
+button{width:100%;padding:14px;border:0;border-radius:12px;background:var(--accent);color:white;font-size:17px;font-weight:700;margin-top:12px}
+.result{display:none}.big{font-size:30px;font-weight:800}.good{color:var(--good)}.bad{color:var(--bad)}
+table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:9px 4px;border-top:1px solid var(--line)}td:last-child{text-align:right;font-weight:700}
+.note{font-size:13px}.pill{display:inline-block;padding:4px 8px;border-radius:99px;background:#21262d;color:#c9d1d9;font-size:12px}
+@media(max-width:520px){.grid{grid-template-columns:1fr} .full{grid-column:auto}}
+</style>
+</head>
+<body><main>
+<span class="pill">楓星 Beta</span>
+<h1>換裝表功比較器</h1>
+<p>用途不是重建整個角色面板，而是快速判斷「這件裝備換下去，對你的表功大概是提升還是下降」。目前先依你提供的精靈遊俠資料製作。</p>
+
+<div class="card">
+<h2>① 目前角色</h2>
+<div class="grid">
+<div><label>目前最低表功</label><input id="curMin" inputmode="numeric" placeholder="例如 27581"></div>
+<div><label>目前最高表功</label><input id="curMax" inputmode="numeric" placeholder="例如 32448"></div>
+<div><label>目前總 DEX</label><input id="curDex" inputmode="numeric" placeholder="例如 2044"></div>
+<div><label>基礎 DEX（括號左邊）</label><input id="baseDex" inputmode="numeric" placeholder="例如 867"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>② 要換掉的舊裝 vs 新裝</h2>
+<p class="note">只填會影響輸出的差異。沒有的項目填 0。DEX% 以「6」代表 6%。</p>
+<div class="grid">
+<div class="full"><strong>舊裝備</strong></div>
+<div><label>DEX 固定值</label><input id="oldDex" inputmode="decimal" value="0"></div>
+<div><label>DEX %</label><input id="oldDexPct" inputmode="decimal" value="0"></div>
+<div><label>攻擊力</label><input id="oldAtk" inputmode="decimal" value="0"></div>
+<div><label>全屬性</label><input id="oldAll" inputmode="decimal" value="0"></div>
+
+<div class="full" style="margin-top:8px"><strong>新裝備</strong></div>
+<div><label>DEX 固定值</label><input id="newDex" inputmode="decimal" value="0"></div>
+<div><label>DEX %</label><input id="newDexPct" inputmode="decimal" value="0"></div>
+<div><label>攻擊力</label><input id="newAtk" inputmode="decimal" value="0"></div>
+<div><label>全屬性</label><input id="newAll" inputmode="decimal" value="0"></div>
+</div>
+<button onclick="compareGear()">比較結果</button>
+</div>
+
+<div class="card result" id="result">
+<h2>③ 比較結果</h2>
+<div id="headline" class="big"></div>
+<table>
+<tr><td>預估 DEX 變化</td><td id="dexDelta"></td></tr>
+<tr><td>攻擊力變化</td><td id="atkDelta"></td></tr>
+<tr><td>預估最低表功</td><td id="estMin"></td></tr>
+<tr><td>預估最高表功</td><td id="estMax"></td></tr>
+<tr><td>預估表功變化</td><td id="rangeDelta"></td></tr>
+</table>
+<p class="note">目前為換裝決策 Beta：DEX% 暫依你已確認的規則，以基礎 DEX 計算（例如 867 × 6% ≈ 52）。攻擊力對表功的精確權重仍需更多實測資料校正，所以結果是「估算」，不是遊戲官方公式。</p>
+</div>
+
+<div class="card">
+<h2>目前已驗證的規則</h2>
+<p class="note">你提供的裸裝測試中，基礎 DEX 867 搭配副武器 DEX +6%，額外 DEX 約為 53，符合基礎 DEX × 6% 的計算方向。之後取得更多替換測試，我們會繼續校正攻擊力、全屬性與技能 Buff。</p>
+</div>
+</main>
+<script>
+const n=id=>Number(document.getElementById(id).value)||0;
+const fmt=x=>Math.round(x).toLocaleString("zh-TW");
+function compareGear(){
+ const curMin=n("curMin"),curMax=n("curMax"),curDex=n("curDex"),baseDex=n("baseDex");
+ if(!curMin||!curMax||!curDex||!baseDex){alert("請先填目前最低/最高表功、總 DEX、基礎 DEX。");return}
+ const oldFlat=n("oldDex")+n("oldAll"), newFlat=n("newDex")+n("newAll");
+ const oldPct=baseDex*n("oldDexPct")/100, newPct=baseDex*n("newDexPct")/100;
+ const dDex=(newFlat+newPct)-(oldFlat+oldPct), dAtk=n("newAtk")-n("oldAtk");
+ // Beta model: stat contribution scales current range; attack is approximated from observed physical-output behavior.
+ const statRatio=dDex/curDex;
+ const atkWeight=0.0085; // intentionally exposed as a calibration constant for later test data
+ const totalRatio=statRatio+dAtk*atkWeight;
+ const eMin=Math.max(0,curMin*(1+totalRatio)),eMax=Math.max(0,curMax*(1+totalRatio));
+ const avgOld=(curMin+curMax)/2,avgNew=(eMin+eMax)/2,pct=(avgNew/avgOld-1)*100;
+ document.getElementById("dexDelta").textContent=(dDex>=0?"+":"")+fmt(dDex);
+ document.getElementById("atkDelta").textContent=(dAtk>=0?"+":"")+dAtk;
+ document.getElementById("estMin").textContent=fmt(eMin);
+ document.getElementById("estMax").textContent=fmt(eMax);
+ document.getElementById("rangeDelta").textContent=(pct>=0?"+":"")+pct.toFixed(2)+"%";
+ const h=document.getElementById("headline");
+ h.textContent=(pct>=0?"提升 ":"下降 ")+Math.abs(pct).toFixed(2)+"%";
+ h.className="big "+(pct>=0?"good":"bad");
+ document.getElementById("result").style.display="block";
+ document.getElementById("result").scrollIntoView({behavior:"smooth"});
+}
+</script>
+</body></html>
