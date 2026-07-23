@@ -42,12 +42,14 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:9px 4px;bor
 <div><label>DEX 固定值</label><input id="oldDex" inputmode="decimal" value="0"></div>
 <div><label>DEX %</label><input id="oldDexPct" inputmode="decimal" value="0"></div>
 <div><label>攻擊力</label><input id="oldAtk" inputmode="decimal" value="0"></div>
+<div><label>攻擊力 %</label><input id="oldAtkPct" inputmode="decimal" value="0"></div>
 <div><label>全屬性</label><input id="oldAll" inputmode="decimal" value="0"></div>
 
 <div class="full" style="margin-top:8px"><strong>新裝備</strong></div>
 <div><label>DEX 固定值</label><input id="newDex" inputmode="decimal" value="0"></div>
 <div><label>DEX %</label><input id="newDexPct" inputmode="decimal" value="0"></div>
 <div><label>攻擊力</label><input id="newAtk" inputmode="decimal" value="0"></div>
+<div><label>攻擊力 %</label><input id="newAtkPct" inputmode="decimal" value="0"></div>
 <div><label>全屬性</label><input id="newAll" inputmode="decimal" value="0"></div>
 </div>
 <button onclick="compareGear()">比較結果</button>
@@ -59,11 +61,12 @@ table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:9px 4px;bor
 <table>
 <tr><td>預估 DEX 變化</td><td id="dexDelta"></td></tr>
 <tr><td>攻擊力變化</td><td id="atkDelta"></td></tr>
+<tr><td>攻擊力 % 變化</td><td id="atkPctDelta"></td></tr>
 <tr><td>預估最低表功</td><td id="estMin"></td></tr>
 <tr><td>預估最高表功</td><td id="estMax"></td></tr>
 <tr><td>預估表功變化</td><td id="rangeDelta"></td></tr>
 </table>
-<p class="note">目前為換裝決策 Beta：DEX% 暫依你已確認的規則，以基礎 DEX 計算（例如 867 × 6% ≈ 52）。攻擊力對表功的精確權重仍需更多實測資料校正，所以結果是「估算」，不是遊戲官方公式。</p>
+<p class="note">目前為換裝決策 Beta：DEX% 暫依你已確認的規則，以基礎 DEX 計算。固定攻擊與攻擊力%都已加入；但攻擊力%的完整疊加順序尚未完成實測驗證，所以含攻擊力%的結果目前屬於估算。</p>
 </div>
 
 <div class="card">
@@ -79,15 +82,20 @@ function compareGear(){
  if(!curMin||!curMax||!curDex||!baseDex){alert("請先填目前最低/最高表功、總 DEX、基礎 DEX。");return}
  const oldFlat=n("oldDex")+n("oldAll"), newFlat=n("newDex")+n("newAll");
  const oldPct=baseDex*n("oldDexPct")/100, newPct=baseDex*n("newDexPct")/100;
- const dDex=(newFlat+newPct)-(oldFlat+oldPct), dAtk=n("newAtk")-n("oldAtk");
- // Beta model: stat contribution scales current range; attack is approximated from observed physical-output behavior.
+ const dDex=(newFlat+newPct)-(oldFlat+oldPct);
+ const dAtk=n("newAtk")-n("oldAtk");
+ const dAtkPct=n("newAtkPct")-n("oldAtkPct");
+ // Beta model: fixed ATT uses current calibration; ATT% is applied multiplicatively as a provisional estimate.
  const statRatio=dDex/curDex;
- const atkWeight=0.0085; // intentionally exposed as a calibration constant for later test data
- const totalRatio=statRatio+dAtk*atkWeight;
+ const atkWeight=0.0085;
+ const fixedAtkRatio=dAtk*atkWeight;
+ const pctAtkRatio=dAtkPct/100;
+ const totalRatio=(1+statRatio+fixedAtkRatio)*(1+pctAtkRatio)-1;
  const eMin=Math.max(0,curMin*(1+totalRatio)),eMax=Math.max(0,curMax*(1+totalRatio));
  const avgOld=(curMin+curMax)/2,avgNew=(eMin+eMax)/2,pct=(avgNew/avgOld-1)*100;
  document.getElementById("dexDelta").textContent=(dDex>=0?"+":"")+fmt(dDex);
  document.getElementById("atkDelta").textContent=(dAtk>=0?"+":"")+dAtk;
+ document.getElementById("atkPctDelta").textContent=(dAtkPct>=0?"+":"")+dAtkPct+"%";
  document.getElementById("estMin").textContent=fmt(eMin);
  document.getElementById("estMax").textContent=fmt(eMax);
  document.getElementById("rangeDelta").textContent=(pct>=0?"+":"")+pct.toFixed(2)+"%";
