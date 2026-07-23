@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>楓星換裝表功計算機</title>
+<style>
+:root{
+  --bg:#0d1117;--card:#161b22;--line:#30363d;--tx:#f0f6fc;--mut:#8b949e;
+  --blue:#2f81f7;--green:#3fb950;--red:#f85149;--yellow:#d29922
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+main{max-width:860px;margin:auto;padding:18px 14px 60px}
+h1{font-size:26px;margin:7px 0}h2{font-size:18px;margin:0 0 12px}
+p{color:var(--mut);line-height:1.55}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin:13px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+label{display:block;font-size:13px;color:var(--mut);margin-bottom:5px}
+input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#0d1117;color:var(--tx);font-size:16px}
+button{width:100%;padding:14px;border:0;border-radius:12px;background:var(--blue);color:#fff;font-size:17px;font-weight:700;margin-top:12px}
+.pill{display:inline-block;padding:4px 8px;border-radius:99px;background:#21262d;font-size:12px;margin:2px}
+.ok{color:#7ee787}.beta{color:#e3b341}
+.result{display:none}.big{font-size:29px;font-weight:800}.good{color:var(--green)}.bad{color:var(--red)}
+table{width:100%;border-collapse:collapse}td{padding:9px 4px;border-top:1px solid var(--line)}td:last-child{text-align:right;font-weight:700}
+.note{font-size:12px}
+.hidden{display:none}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<main>
+<span class="pill">v1.0 測試版</span>
+<h1>楓星換裝表功計算機</h1>
+<p>選職業、填目前面板、舊裝、新裝。職業參數由網站自動帶入；精靈遊俠已用楓星實測校驗，其餘職業先以 BB 後歷史資料為基準。</p>
+
+<div class="card">
+<h2>① 職業</h2>
+<select id="job" onchange="jobChange()">
+  <option value="hero">英雄</option>
+  <option value="paladin">聖騎士</option>
+  <option value="darkknight">黑騎士</option>
+  <option value="fp">火毒大魔導士</option>
+  <option value="il">冰雷大魔導士</option>
+  <option value="bishop">主教</option>
+  <option value="bowmaster">箭神</option>
+  <option value="marksman">神射手</option>
+  <option value="nightlord">夜使者</option>
+  <option value="shadower">暗影神偷</option>
+  <option value="dualblade">影武者</option>
+  <option value="bucc">拳霸</option>
+  <option value="corsair">槍神</option>
+  <option value="cannon">重砲指揮官</option>
+  <option value="aran">狂狼勇士</option>
+  <option value="evan">龍魔導士</option>
+  <option value="mercedes" selected>精靈遊俠（已驗證）</option>
+  <option value="phantom">幻影俠盜</option>
+  <option value="demonslayer">惡魔殺手</option>
+  <option value="battlemage">煉獄巫師</option>
+  <option value="wildhunter">狂豹獵人</option>
+  <option value="mechanic">機甲戰神</option>
+</select>
+<div id="jobInfo" style="margin-top:10px"></div>
+</div>
+
+<div class="card">
+<h2>② 目前面板</h2>
+<div class="grid">
+<div><label>最低表功</label><input id="curMin" inputmode="numeric" placeholder="例如 27581"></div>
+<div><label>最高表功</label><input id="curMax" inputmode="numeric" placeholder="例如 32448"></div>
+<div><label id="mainNowL">目前主屬</label><input id="curMain" inputmode="numeric"></div>
+<div><label id="secNowL">目前副屬</label><input id="curSec" inputmode="numeric"></div>
+<div><label id="sec2NowL" class="hidden">第二副屬</label><input id="curSec2" class="hidden" inputmode="numeric" value="0"></div>
+<div><label id="baseMainL">基礎主屬（括號左邊）</label><input id="baseMain" inputmode="numeric"></div>
+<div><label id="baseSecL">基礎副屬（選填）</label><input id="baseSec" inputmode="numeric" value="0"></div>
+<div><label id="baseSec2L" class="hidden">第二基礎副屬（選填）</label><input id="baseSec2" class="hidden" inputmode="numeric" value="0"></div>
+</div>
+</div>
+
+<div class="card">
+<h2>③ 舊裝 → 新裝</h2>
+<p class="note">只填這一件裝備本身顯示的能力。沒有的項目填 0。</p>
+<div class="grid">
+<div class="full"><strong>舊裝</strong></div>
+<div><label id="oml">主屬</label><input id="om" value="0" inputmode="decimal"></div>
+<div><label id="omp">主屬 %</label><input id="ompct" value="0" inputmode="decimal"></div>
+<div><label id="osl">副屬</label><input id="os" value="0" inputmode="decimal"></div>
+<div><label id="osp">副屬 %</label><input id="ospct" value="0" inputmode="decimal"></div>
+<div id="oldSec2Wrap" class="hidden"><label id="os2l">第二副屬</label><input id="os2" value="0" inputmode="decimal"></div>
+<div id="oldSec2PctWrap" class="hidden"><label id="os2p">第二副屬 %</label><input id="os2pct" value="0" inputmode="decimal"></div>
+<div><label>全屬性</label><input id="oa" value="0" inputmode="decimal"></div>
+<div><label>全屬性 %</label><input id="oapct" value="0" inputmode="decimal"></div>
+<div><label id="oattl">攻擊力</label><input id="oatt" value="0" inputmode="decimal"></div>
+<div><label id="oattpl">攻擊力 %</label><input id="oattpct" value="0" inputmode="decimal"></div>
+
+<div class="full"><strong>新裝</strong></div>
+<div><label id="nml">主屬</label><input id="nm" value="0" inputmode="decimal"></div>
+<div><label id="nmp">主屬 %</label><input id="nmpct" value="0" inputmode="decimal"></div>
+<div><label id="nsl">副屬</label><input id="ns" value="0" inputmode="decimal"></div>
+<div><label id="nsp">副屬 %</label><input id="nspct" value="0" inputmode="decimal"></div>
+<div id="newSec2Wrap" class="hidden"><label id="ns2l">第二副屬</label><input id="ns2" value="0" inputmode="decimal"></div>
+<div id="newSec2PctWrap" class="hidden"><label id="ns2p">第二副屬 %</label><input id="ns2pct" value="0" inputmode="decimal"></div>
+<div><label>全屬性</label><input id="na" value="0" inputmode="decimal"></div>
+<div><label>全屬性 %</label><input id="napct" value="0" inputmode="decimal"></div>
+<div><label id="nattl">攻擊力</label><input id="natt" value="0" inputmode="decimal"></div>
+<div><label id="nattpl">攻擊力 %</label><input id="nattpct" value="0" inputmode="decimal"></div>
+</div>
+<button onclick="calc()">比較結果</button>
+</div>
+
+<div class="card result" id="res">
+<h2>④ 比較結果</h2>
+<div id="head" class="big"></div>
+<div id="conf"></div>
+<table>
+<tr><td>主屬變化</td><td id="dm"></td></tr>
+<tr><td>副屬變化</td><td id="ds"></td></tr>
+<tr id="ds2row" class="hidden"><td>第二副屬變化</td><td id="ds2"></td></tr>
+<tr><td id="attrow">攻擊力變化</td><td id="da"></td></tr>
+<tr><td id="attprow">攻擊力%變化</td><td id="dap"></td></tr>
+<tr><td>預估最低表功</td><td id="emin"></td></tr>
+<tr><td>預估最高表功</td><td id="emax"></td></tr>
+<tr><td>預估變化</td><td id="pct"></td></tr>
+</table>
+<p class="note" id="warn"></p>
+</div>
+
+<div class="card">
+<h2>目前支援範圍</h2>
+<p class="note">Xenon、Demon Avenger 等使用特殊屬性公式的職業暫不納入，避免把一般公式硬套造成錯誤。這版先把一般職業架構封住，再用實測校正各職業參數。</p>
+</div>
+
+<script>
+const J={
+hero:{name:"英雄",main:"STR",sec:"DEX",sec2:null,kind:"weapon",mult:1.44,verified:false,note:"BB 後歷史資料 Beta"},
+paladin:{name:"聖騎士",main:"STR",sec:"DEX",sec2:null,kind:"weapon",mult:1.34,verified:false,note:"BB 後歷史資料 Beta"},
+darkknight:{name:"黑騎士",main:"STR",sec:"DEX",sec2:null,kind:"weapon",mult:1.49,verified:false,note:"BB 後歷史資料 Beta"},
+fp:{name:"火毒大魔導士",main:"INT",sec:"LUK",sec2:null,kind:"magic",mult:1.20,verified:false,note:"BB 後歷史資料 Beta"},
+il:{name:"冰雷大魔導士",main:"INT",sec:"LUK",sec2:null,kind:"magic",mult:1.20,verified:false,note:"BB 後歷史資料 Beta"},
+bishop:{name:"主教",main:"INT",sec:"LUK",sec2:null,kind:"magic",mult:1.20,verified:false,note:"BB 後歷史資料 Beta"},
+bowmaster:{name:"箭神",main:"DEX",sec:"STR",sec2:null,kind:"weapon",mult:1.20,verified:false,note:"BB 後歷史資料 Beta"},
+marksman:{name:"神射手",main:"DEX",sec:"STR",sec2:null,kind:"weapon",mult:1.35,verified:false,note:"BB 後歷史資料 Beta"},
+nightlord:{name:"夜使者",main:"LUK",sec:"DEX",sec2:null,kind:"weapon",mult:1.75,verified:false,note:"BB 後歷史資料 Beta"},
+shadower:{name:"暗影神偷",main:"LUK",sec:"DEX",sec2:"STR",kind:"weapon",mult:1.30,verified:false,note:"副屬使用 DEX + STR；BB 後歷史資料 Beta"},
+dualblade:{name:"影武者",main:"LUK",sec:"DEX",sec2:"STR",kind:"weapon",mult:1.30,verified:false,note:"副屬使用 DEX + STR；BB 後歷史資料 Beta"},
+bucc:{name:"拳霸",main:"STR",sec:"DEX",sec2:null,kind:"weapon",mult:1.70,verified:false,note:"BB 後歷史資料 Beta"},
+corsair:{name:"槍神",main:"DEX",sec:"STR",sec2:null,kind:"weapon",mult:1.50,verified:false,note:"BB 後歷史資料 Beta"},
+cannon:{name:"重砲指揮官",main:"STR",sec:"DEX",sec2:null,kind:"weapon",mult:1.50,verified:false,note:"BB 後歷史資料 Beta"},
+aran:{name:"狂狼勇士",main:"STR",sec:"DEX",sec2:null,kind:"weapon",mult:1.49,verified:false,note:"BB 後歷史資料 Beta"},
+evan:{name:"龍魔導士",main:"INT",sec:"LUK",sec2:null,kind:"magic",mult:1.20,verified:false,note:"BB 後歷史資料 Beta"},
+mercedes:{name:"精靈遊俠",main:"DEX",sec:"STR",sec2:null,kind:"weapon",mult:1.30,verified:true,note:"楓星實測已驗證核心表功公式"},
+phantom:{name:"幻影俠盜",main:"LUK",sec:"DEX",sec2:null,kind:"weapon",mult:1.30,verified:false,note:"BB 後歷史資料 Beta"},
+demonslayer:{name:"惡魔殺手",main:"STR",sec:"DEX",sec2:null,kind:"weapon",mult:1.20,verified:false,note:"版本差異較大，Beta"},
+battlemage:{name:"煉獄巫師",main:"INT",sec:"LUK",sec2:null,kind:"magic",mult:1.20,verified:false,note:"BB 後歷史資料 Beta"},
+wildhunter:{name:"狂豹獵人",main:"DEX",sec:"STR",sec2:null,kind:"weapon",mult:1.35,verified:false,note:"BB 後歷史資料 Beta"},
+mechanic:{name:"機甲戰神",main:"DEX",sec:"STR",sec2:null,kind:"weapon",mult:1.50,verified:false,note:"BB 後歷史資料 Beta"}
+};
+const $=id=>document.getElementById(id);
+const n=id=>Number($(id).value)||0;
+const f=x=>Math.round(x).toLocaleString("zh-TW");
+const signed=(x,s="")=>(x>=0?"+":"")+Math.round(x*100)/100+s;
+function show(id,yes){$(id).classList.toggle("hidden",!yes)}
+function jobChange(){
+ const j=J[$("job").value], magic=j.kind==="magic", A=magic?"魔法攻擊力":"攻擊力";
+ $("mainNowL").textContent="目前主屬 "+j.main;
+ $("secNowL").textContent="目前副屬 "+j.sec;
+ $("baseMainL").textContent="基礎主屬 "+j.main+"（括號左邊）";
+ $("baseSecL").textContent="基礎副屬 "+j.sec+"（選填）";
+ const has2=!!j.sec2;
+ show("sec2NowL",has2);show("curSec2",has2);show("baseSec2L",has2);show("baseSec2",has2);
+ if(has2){$("sec2NowL").textContent="目前第二副屬 "+j.sec2;$("baseSec2L").textContent="基礎第二副屬 "+j.sec2+"（選填）";}
+ for(const id of ["oml","nml"])$(id).textContent="主屬 "+j.main;
+ for(const id of ["omp","nmp"])$(id).textContent="主屬 "+j.main+" %";
+ for(const id of ["osl","nsl"])$(id).textContent="副屬 "+j.sec;
+ for(const id of ["osp","nsp"])$(id).textContent="副屬 "+j.sec+" %";
+ show("oldSec2Wrap",has2);show("oldSec2PctWrap",has2);show("newSec2Wrap",has2);show("newSec2PctWrap",has2);show("ds2row",has2);
+ if(has2){$("os2l").textContent="第二副屬 "+j.sec2;$("os2p").textContent="第二副屬 "+j.sec2+" %";$("ns2l").textContent="第二副屬 "+j.sec2;$("ns2p").textContent="第二副屬 "+j.sec2+" %";}
+ $("oattl").textContent=A;$("nattl").textContent=A;$("oattpl").textContent=A+" %";$("nattpl").textContent=A+" %";
+ $("attrow").textContent=A+"變化";$("attprow").textContent=A+"%變化";
+ $("jobInfo").innerHTML=(j.verified?'<span class="pill ok">楓星實測驗證</span>':'<span class="pill beta">歷史資料 Beta</span>')+
+ `<span class="pill">主屬 ${j.main}</span><span class="pill">副屬 ${j.sec}${j.sec2?" + "+j.sec2:""}</span><span class="pill">係數 ${j.mult}</span><p class="note">${j.note}</p>`;
+}
+function calc(){
+ const j=J[$("job").value];
+ const cmin=n("curMin"),cmax=n("curMax"),cm=n("curMain"),cs=n("curSec"),cs2=n("curSec2"),bm=n("baseMain"),bs=n("baseSec"),bs2=n("baseSec2");
+ if(!cmin||!cmax||!cm||!bm){alert("請填最低/最高表功、目前主屬、基礎主屬");return}
+ const oldM=n("om")+n("oa"), newM=n("nm")+n("na");
+ const oldS=n("os")+n("oa"), newS=n("ns")+n("na");
+ const oldS2=n("os2")+n("oa"), newS2=n("ns2")+n("na");
+ const oldMP=n("ompct")+n("oapct"), newMP=n("nmpct")+n("napct");
+ const oldSP=n("ospct")+n("oapct"), newSP=n("nspct")+n("napct");
+ const oldS2P=n("os2pct")+n("oapct"), newS2P=n("ns2pct")+n("napct");
+ const dM=(newM-oldM)+(Math.ceil(bm*newMP/100)-Math.ceil(bm*oldMP/100));
+ const dS=(newS-oldS)+(bs?Math.ceil(bs*newSP/100)-Math.ceil(bs*oldSP/100):0);
+ const dS2=j.sec2?((newS2-oldS2)+(bs2?Math.ceil(bs2*newS2P/100)-Math.ceil(bs2*oldS2P/100):0)):0;
+ const oldAtt=n("oatt"),newAtt=n("natt"),oldAP=n("oattpct"),newAP=n("nattpct");
+ const secValue=cs+(j.sec2?cs2:0);
+ const stat=4*cm+secValue;
+ const effAtt=cmax*100/(j.mult*stat);
+ let nextAtt=effAtt-oldAtt+newAtt;
+ nextAtt*=((1+newAP/100)/(1+oldAP/100));
+ const newSecValue=(cs+dS)+(j.sec2?(cs2+dS2):0);
+ const nmax=j.mult*(4*(cm+dM)+newSecValue)*nextAtt/100;
+ const scale=nmax/cmax,nmin=cmin*scale,p=(scale-1)*100;
+ $("dm").textContent=signed(dM);$("ds").textContent=signed(dS);if(j.sec2)$("ds2").textContent=signed(dS2);
+ $("da").textContent=signed(newAtt-oldAtt);$("dap").textContent=signed(newAP-oldAP,"%");
+ $("emin").textContent=f(nmin);$("emax").textContent=f(nmax);$("pct").textContent=signed(p,"%");
+ $("head").textContent=(p>=0?"提升 ":"下降 ")+Math.abs(p).toFixed(2)+"%";
+ $("head").className="big "+(p>=0?"good":"bad");
+ const approx=(oldAP!==newAP)||!j.verified;
+ $("conf").innerHTML=approx?'<span class="pill beta">Beta / 需實測驗證</span>':'<span class="pill ok">高信心</span>';
+ $("warn").textContent=(oldAP!==newAP?"本次涉及攻擊力%，目前以新舊裝相對倍率估算。 ":"")+
+ (!j.verified?"此職業參數目前來自 BB 後/歷史 MapleStory 資料，尚未用楓星角色實測。":"精靈遊俠核心公式已用楓星資料驗證。");
+ $("res").style.display="block";
+ $("res").scrollIntoView({behavior:"smooth"});
+}
+jobChange();
+</script>
+</main>
+</body>
+</html>
