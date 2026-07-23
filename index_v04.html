@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>楓星｜換裝表功比較器</title>
+<style>
+:root{
+  --bg:#0d1117;--card:#161b22;--line:#30363d;--text:#f0f6fc;--muted:#8b949e;
+  --accent:#2f81f7;--good:#3fb950;--bad:#f85149;--warn:#d29922;--verified:#238636
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif}
+main{max-width:820px;margin:auto;padding:20px 16px 70px}
+h1{font-size:27px;margin:8px 0}h2{font-size:18px;margin:0 0 12px}
+p{color:var(--muted);line-height:1.6}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:5px}
+input,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0d1117;color:var(--text);font-size:16px}
+button{width:100%;padding:14px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-size:17px;font-weight:750;margin-top:12px;cursor:pointer}
+.result{display:none}.big{font-size:29px;font-weight:800}.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}
+table{width:100%;border-collapse:collapse;margin-top:12px}td{padding:9px 4px;border-top:1px solid var(--line)}td:last-child{text-align:right;font-weight:700}
+.note{font-size:13px}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#21262d;color:#c9d1d9;font-size:12px;margin-right:5px}
+.pill.verified{background:rgba(35,134,54,.2);color:#7ee787;border:1px solid rgba(63,185,80,.35)}
+.pill.beta{background:rgba(210,153,34,.13);color:#e3b341;border:1px solid rgba(210,153,34,.35)}
+.status{margin-top:10px}
+details{border-top:1px solid var(--line);margin-top:14px;padding-top:12px}
+summary{cursor:pointer;color:#c9d1d9;font-weight:650}
+.small{font-size:12px;color:var(--muted);margin-top:5px}
+@media(max-width:560px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body>
+<main>
+<span class="pill">楓星 Beta v0.4</span>
+<h1>換裝表功比較器</h1>
+<p>選職業、填目前面板、填舊裝與新裝。技能與熟練度不需要自己輸入；同一個 Buff 狀態下，現在的面板本身已經把你的技能效果包含進去了。</p>
+
+<div class="card">
+<h2>① 選擇職業</h2>
+<label>職業</label>
+<select id="job" onchange="applyJob()">
+  <option value="mercedes">精靈遊俠</option>
+  <option value="bowmaster">箭神（BB 資料 Beta）</option>
+  <option value="marksman">神射手（BB 資料 Beta）</option>
+  <option value="nightlord">夜使者（BB 資料 Beta）</option>
+  <option value="shadower">暗影神偷（BB 資料 Beta）</option>
+  <option value="buccaneer">拳霸（BB 資料 Beta）</option>
+  <option value="corsair">槍神（BB 資料 Beta）</option>
+</select>
+<div class="status" id="jobStatus"></div>
+<p class="note" id="jobNote"></p>
+</div>
+
+<div class="card">
+<h2>② 目前角色面板</h2>
+<div class="grid">
+  <div><label>目前最低表功</label><input id="curMin" inputmode="numeric" placeholder="例如 27581"></div>
+  <div><label>目前最高表功</label><input id="curMax" inputmode="numeric" placeholder="例如 32448"></div>
+  <div><label id="mainLabel">目前主屬 DEX</label><input id="curMain" inputmode="numeric" placeholder="例如 2044"></div>
+  <div><label id="secLabel">目前副屬 STR</label><input id="curSec" inputmode="numeric" placeholder="例如 144"></div>
+  <div><label id="baseMainLabel">基礎主屬 DEX（括號左邊）</label><input id="baseMain" inputmode="numeric" placeholder="例如 867"></div>
+</div>
+<details>
+  <summary>進階：角色目前的 % 數值（有 %攻裝時建議填）</summary>
+  <div class="grid" style="margin-top:10px">
+    <div><label>目前總攻擊力 %</label><input id="currentAtkPct" inputmode="decimal" value="0"></div>
+  </div>
+  <div class="small">目前總攻擊力%包含舊裝的攻擊力%。若不知道，可以留 0；結果會標成估算。</div>
+</details>
+</div>
+
+<div class="card">
+<h2>③ 舊裝 vs 新裝</h2>
+<p class="note">只填這一件裝備上會影響表功的數字。%欄位直接填 6 代表 6%。</p>
+<div class="grid">
+  <div class="full"><strong>現在穿的舊裝</strong></div>
+  <div><label id="oldMainLabel">主屬 DEX</label><input id="oldMain" inputmode="decimal" value="0"></div>
+  <div><label id="oldSecLabel">副屬 STR</label><input id="oldSec" inputmode="decimal" value="0"></div>
+  <div><label id="oldMainPctLabel">主屬 DEX %</label><input id="oldMainPct" inputmode="decimal" value="0"></div>
+  <div><label>攻擊力</label><input id="oldAtk" inputmode="decimal" value="0"></div>
+  <div><label>攻擊力 %</label><input id="oldAtkPct" inputmode="decimal" value="0"></div>
+
+  <div class="full" style="margin-top:10px"><strong>想換的新裝</strong></div>
+  <div><label id="newMainLabel">主屬 DEX</label><input id="newMain" inputmode="decimal" value="0"></div>
+  <div><label id="newSecLabel">副屬 STR</label><input id="newSec" inputmode="decimal" value="0"></div>
+  <div><label id="newMainPctLabel">主屬 DEX %</label><input id="newMainPct" inputmode="decimal" value="0"></div>
+  <div><label>攻擊力</label><input id="newAtk" inputmode="decimal" value="0"></div>
+  <div><label>攻擊力 %</label><input id="newAtkPct" inputmode="decimal" value="0"></div>
+</div>
+<button onclick="compareGear()">比較換裝結果</button>
+</div>
+
+<div class="card result" id="result">
+<h2>④ 結果</h2>
+<div id="headline" class="big"></div>
+<div id="confidence" class="status"></div>
+<table>
+<tr><td>預估主屬變化</td><td id="mainDelta"></td></tr>
+<tr><td>預估副屬變化</td><td id="secDelta"></td></tr>
+<tr><td>固定攻擊力變化</td><td id="atkDelta"></td></tr>
+<tr><td>攻擊力 % 變化</td><td id="atkPctDelta"></td></tr>
+<tr><td>預估最低表功</td><td id="estMin"></td></tr>
+<tr><td>預估最高表功</td><td id="estMax"></td></tr>
+<tr><td>預估表功變化</td><td id="rangeDelta"></td></tr>
+</table>
+<p class="note" id="resultNote"></p>
+</div>
+
+<div class="card">
+<h2>目前職業資料狀態</h2>
+<p class="note">
+<strong>精靈遊俠：</strong>已用楓星實測對過武器係數 1.30、DEX/STR 與表功公式。<br>
+<strong>其他職業：</strong>先採 Big Bang 後通用公式與歷史武器係數，標示 Beta；後續會逐職業用楓星資料驗證。
+</p>
+</div>
+</main>
+
+<script>
+const jobs={
+ mercedes:{name:"精靈遊俠",main:"DEX",sec:"STR",mult:1.30,verified:true,source:"楓星實測 + Mercedes 歷史資料"},
+ bowmaster:{name:"箭神",main:"DEX",sec:"STR",mult:1.15,verified:false,source:"Big Bang 歷史 Bow 係數"},
+ marksman:{name:"神射手",main:"DEX",sec:"STR",mult:1.35,verified:false,source:"Big Bang 歷史 Crossbow 係數"},
+ nightlord:{name:"夜使者",main:"LUK",sec:"DEX",mult:2.00,verified:false,source:"Big Bang 歷史 Claw 係數"},
+ shadower:{name:"暗影神偷",main:"LUK",sec:"DEX+STR",mult:1.30,verified:false,source:"Big Bang 歷史 Dagger 係數"},
+ buccaneer:{name:"拳霸",main:"STR",sec:"DEX",mult:1.70,verified:false,source:"Big Bang 歷史 Knuckle 係數"},
+ corsair:{name:"槍神",main:"DEX",sec:"STR",mult:1.60,verified:false,source:"Big Bang 歷史 Gun 係數"}
+};
+
+const num=id=>Number(document.getElementById(id).value)||0;
+const fmt=x=>Math.round(x).toLocaleString("zh-TW");
+function signed(x,suffix=""){return (x>=0?"+":"")+ (Math.round(x*100)/100) + suffix}
+
+function applyJob(){
+ const j=jobs[document.getElementById("job").value];
+ document.getElementById("mainLabel").textContent=`目前主屬 ${j.main}`;
+ document.getElementById("secLabel").textContent=`目前副屬 ${j.sec}`;
+ document.getElementById("baseMainLabel").textContent=`基礎主屬 ${j.main}（括號左邊）`;
+ document.getElementById("oldMainLabel").textContent=`主屬 ${j.main}`;
+ document.getElementById("oldSecLabel").textContent=`副屬 ${j.sec}`;
+ document.getElementById("oldMainPctLabel").textContent=`主屬 ${j.main} %`;
+ document.getElementById("newMainLabel").textContent=`主屬 ${j.main}`;
+ document.getElementById("newSecLabel").textContent=`副屬 ${j.sec}`;
+ document.getElementById("newMainPctLabel").textContent=`主屬 ${j.main} %`;
+ document.getElementById("jobStatus").innerHTML=j.verified
+   ? `<span class="pill verified">已用楓星實測驗證</span>`
+   : `<span class="pill beta">BB 歷史資料 Beta</span>`;
+ document.getElementById("jobNote").textContent=`${j.name}：主屬 ${j.main}｜副屬 ${j.sec}｜武器係數 ${j.mult}｜${j.source}`;
+}
+function compareGear(){
+ const j=jobs[document.getElementById("job").value];
+ const curMin=num("curMin"),curMax=num("curMax"),curMain=num("curMain"),curSec=num("curSec"),baseMain=num("baseMain");
+ if(!curMin||!curMax||!curMain||!baseMain){
+   alert("請填最低/最高表功、目前主屬、基礎主屬。"); return;
+ }
+ const oldMain=num("oldMain"),newMain=num("newMain");
+ const oldSec=num("oldSec"),newSec=num("newSec");
+ const oldMainPct=num("oldMainPct"),newMainPct=num("newMainPct");
+ const oldAtk=num("oldAtk"),newAtk=num("newAtk");
+ const oldAtkPct=num("oldAtkPct"),newAtkPct=num("newAtkPct");
+ const currentAtkPct=num("currentAtkPct");
+
+ // Main-stat % behavior follows the currently verified MapleStar/Mercedes observation:
+ // item %main is based on base/assigned main stat. For other jobs this remains a BB-reference assumption.
+ const dMainPct=Math.ceil(baseMain*newMainPct/100)-Math.ceil(baseMain*oldMainPct/100);
+ const dMain=(newMain-oldMain)+dMainPct;
+ const dSec=newSec-oldSec;
+
+ // Infer current effective total ATT from the displayed maximum range.
+ const statValue=4*curMain+curSec;
+ const effectiveAtk=curMax*100/(j.mult*statValue);
+
+ // If user supplies current total ATT%, back out flat ATT and replace old/new item components.
+ let newEffectiveAtk;
+ let atkExact=currentAtkPct!==0 || (oldAtkPct===0 && newAtkPct===0);
+ if(currentAtkPct!==0){
+   const currentPctFactor=1+currentAtkPct/100;
+   const flatAtk=effectiveAtk/currentPctFactor;
+   const newFlatAtk=flatAtk-oldAtk+newAtk;
+   const newTotalPct=currentAtkPct-oldAtkPct+newAtkPct;
+   newEffectiveAtk=newFlatAtk*(1+newTotalPct/100);
+ }else{
+   // When no existing ATT% is provided, treat fixed ATT as effective and apply item ATT% provisionally.
+   newEffectiveAtk=(effectiveAtk-oldAtk+newAtk)*(1+(newAtkPct-oldAtkPct)/100);
+ }
+
+ const newMainTotal=curMain+dMain;
+ const newSecTotal=curSec+dSec;
+ const newMax=j.mult*(4*newMainTotal+newSecTotal)*newEffectiveAtk/100;
+ const scale=newMax/curMax;
+ const newMin=curMin*scale;
+ const pct=(scale-1)*100;
+
+ document.getElementById("mainDelta").textContent=signed(dMain);
+ document.getElementById("secDelta").textContent=signed(dSec);
+ document.getElementById("atkDelta").textContent=signed(newAtk-oldAtk);
+ document.getElementById("atkPctDelta").textContent=signed(newAtkPct-oldAtkPct,"%");
+ document.getElementById("estMin").textContent=fmt(newMin);
+ document.getElementById("estMax").textContent=fmt(newMax);
+ document.getElementById("rangeDelta").textContent=signed(pct,"%");
+
+ const h=document.getElementById("headline");
+ h.textContent=(pct>=0?"提升 ":"下降 ")+Math.abs(pct).toFixed(2)+"%";
+ h.className="big "+(pct>=0?"good":"bad");
+
+ let conf, note;
+ if(j.verified && atkExact){
+   conf='<span class="pill verified">高信心：職業核心公式已驗證</span>';
+ }else{
+   conf='<span class="pill beta">Beta 估算</span>';
+ }
+ if((oldAtkPct!==0||newAtkPct!==0)&&currentAtkPct===0){
+   conf+='<span class="pill beta">未填目前總攻擊%</span>';
+   note="這次比較含攻擊力%，但你沒有填角色目前總攻擊力%，因此攻擊力部分只能近似。";
+ }else if(!j.verified){
+   note="此職業目前使用 Big Bang 歷史係數與通用公式，尚未用楓星實測校驗。";
+ }else{
+   note="精靈遊俠核心表功公式已用你提供的楓星資料校驗；裝備百分比的逐層取整仍可能造成少量誤差。";
+ }
+ document.getElementById("confidence").innerHTML=conf;
+ document.getElementById("resultNote").textContent=note;
+ document.getElementById("result").style.display="block";
+ document.getElementById("result").scrollIntoView({behavior:"smooth"});
+}
+applyJob();
+</script>
+</body>
+</html>
